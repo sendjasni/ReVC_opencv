@@ -1,0 +1,2 @@
+# ReVC_opencv
+[![Codacy Badge](https://api.codacy.com/project/badge/Grade/16f57a015f5d447b9ce1ce8042d2af1e)](https://app.codacy.com/app/sendjasni/ReVC_opencv?utm_source=github.com&utm_medium=referral&utm_content=sendjasni/ReVC_opencv&utm_campaign=Badge_Grade_Dashboard)
