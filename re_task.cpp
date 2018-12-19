@@ -2,11 +2,14 @@
 #include <cstdlib>
 #include "opencv2/opencv.hpp"
 
+extern "C" {
 #include <ptask.h>
 #include <tstat.h>
-
+}
+    
 #define PER 50
 #define ESC 27
+#define PRIORITY 10
 
 int checkTaskCreation(int task_index);
 int ImageCapture();

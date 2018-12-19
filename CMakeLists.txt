@@ -17,4 +17,4 @@ include_directories(${OpenCV_INCLUDE_DIRS})
 include_directories(${ALLEGRO_INCLUDE_DIR})
 
 add_executable(ReVC_opencv re_task.cpp)
-target_link_libraries(ReVC_opencv ${OpenCV_LIBS} ptask Threads::Threads ${ALLEGRO_LIBRARY} rt m)
+target_link_libraries(ReVC_opencv ${OpenCV_LIBS} ptask Threads::Threads rt m)
