@@ -2,11 +2,12 @@
 #include <cstdlib>
 #include "opencv2/opencv.hpp"
 
-extern "C" {
+extern "C"
+{
 #include <ptask.h>
 #include <tstat.h>
 }
-    
+
 #define PER 50
 #define ESC 27
 #define PRIORITY 10
@@ -70,15 +71,13 @@ int checkTaskCreation(int task_index)
 {
     if (task_index != -1)
     {
-        std::cout << "The task %d was created successfully \n"
-                  << task_index
+        std::cout << "The task " << task_index << " was created successfully"
                   << std::endl;
         return EXIT_SUCCESS;
     }
     else
     {
-        std::cout << " ERROR! task not created !!! \n"
-                  << std::endl;
+        std::cout << " ERROR! task not created !!!" << std::endl;
         exit(EXIT_FAILURE);
     }
 }
@@ -93,14 +92,13 @@ ptask CapturingImageTask()
 
     while (1)
     {
-         std::cout << "The job %d of Task T%d is running on core %d at time : %ld\n"
-                    << task_job << ptask_get_index() << sched_getcpu() 
-                    << ptask_gettime(MILLI) << std::endl;
+        std::cout << "The job " << task_job << " of Task T" << ptask_get_index()
+                  << " is running on core " << sched_getcpu() << " at time : "
+                  << ptask_gettime(MILLI) << std::endl;
 
-         ImageCapture();
-         // SwapBuffer(front_buffer, back_buffer);
-         ptask_wait_for_period();
-         task_job++;
+        ImageCapture();
+        ptask_wait_for_period();
+        task_job++;
     }
 }
 
@@ -137,8 +135,8 @@ void TasksStatisticComputing(int nbr_tasks)
         tspec avg;
         avg = ptask_get_avg(task_index);
 
-         std::cout << "Task %d : WCET = %ld\t AVG = %ld\t NINST=%d \n"
-                    << task_index << tspec_to(&wcet, MILLI) << tspec_to(&avg, MILLI)
-                    << ptask_get_numinstances(task_index) << std::endl;
+        std::cout << "Task " << task_index << " : WCET = " << tspec_to(&wcet, MILLI)
+                  << " AVG = " << tspec_to(&avg, MILLI) << " NINST = "
+                  << ptask_get_numinstances(task_index) << std::endl;
     }
 }
