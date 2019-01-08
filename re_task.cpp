@@ -6,6 +6,8 @@ extern "C"
 {
 #include <ptask.h>
 #include <tstat.h>
+#include <time.h>
+
 }
 
 #define PER 50
@@ -13,7 +15,7 @@ extern "C"
 #define PRIORITY 10
 
 int checkTaskCreation(int task_index);
-int ImageCapture();
+int ImageCapture(cv::VideoCapture, cv::Mat);
 static int StartTask(int processor, void (*task_body)(void));
 void TasksStatisticComputing(int nbr_tasks);
 ptask CapturingImageTask();
@@ -88,6 +90,16 @@ int checkTaskCreation(int task_index)
 
 ptask CapturingImageTask()
 {
+    cv::VideoCapture capture(cv::CAP_ANY);
+
+    if (!capture.isOpened())
+    {
+        std::cout << "Error opening video camera! " << std::endl;
+        exit(EXIT_FAILURE);
+    }
+
+    cv::Mat frame;
+
     int task_job = 0;
 
     while (1)
@@ -96,28 +108,30 @@ ptask CapturingImageTask()
                   << " is running on core " << sched_getcpu() << " at time : "
                   << ptask_gettime(MILLI) << std::endl;
 
-        ImageCapture();
+        ImageCapture(capture, frame);
         ptask_wait_for_period();
         task_job++;
     }
-}
-
-int ImageCapture()
-{
-    cv::VideoCapture capture(cv::CAP_ANY);
-
-    if (!capture.isOpened())
-    {
-        std::cout << "Error opening video camera! " << std::endl;
-        return EXIT_FAILURE;
-    }
-
-    cv::Mat frame;
-    capture >> frame;
-    cv::imshow("this is you, smile! :)", frame);
-    cv::waitKey(PER);
     capture.release();
 
+}
+
+int ImageCapture(cv::VideoCapture cap, cv::Mat frame)
+{
+    struct timespec start_time;
+	int begin = clock();
+	clock_gettime(CLOCK_REALTIME, &start_time); /* Get cpu time before the capture*/
+
+
+    cap >> frame;
+    cv::imshow("this is you, smile! :)", frame);
+    cv::waitKey(1);
+
+    struct timespec finish_time;
+	int end = clock();
+	clock_gettime(CLOCK_REALTIME, &finish_time); /* Get cpu time after the capture*/
+
+    std::cout << "Execution time : " << (float)((finish_time.tv_nsec) - (start_time.tv_nsec)) << std::endl;
     return EXIT_SUCCESS;
 }
 /* 
