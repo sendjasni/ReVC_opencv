@@ -14,8 +14,11 @@ extern "C"
 #define ESC 27
 #define PRIORITY 10
 
+cv::Mat frame;
+cv::VideoCapture capture(cv::CAP_ANY); /* open the default camera */
+
 int checkTaskCreation(int task_index);
-int ImageCapture(cv::VideoCapture, cv::Mat);
+int ImageCapture();
 static int StartTask(int processor, void (*task_body)(void));
 void TasksStatisticComputing(int nbr_tasks);
 ptask CapturingImageTask();
@@ -23,6 +26,13 @@ int TaskCreat();
 
 int main(int argc, char const *argv[])
 {
+
+    if (!capture.isOpened())               /* check if we succeeded   */ 
+    {
+        std::cout << "Error opening video camera! " << std::endl;
+        exit(EXIT_FAILURE);
+    }
+   
     // Initiate the PTask
     ptask_init(SCHED_FIFO, PARTITIONED, NO_PROTOCOL);
 
@@ -39,6 +49,7 @@ int main(int argc, char const *argv[])
 int TaskCreat()
 {
     int allocated_processor = 0;
+    
     checkTaskCreation(StartTask(allocated_processor, CapturingImageTask));
     allocated_processor++;
 
@@ -90,16 +101,7 @@ int checkTaskCreation(int task_index)
 
 ptask CapturingImageTask()
 {
-    cv::VideoCapture capture(cv::CAP_ANY);
-
-    if (!capture.isOpened())
-    {
-        std::cout << "Error opening video camera! " << std::endl;
-        exit(EXIT_FAILURE);
-    }
-
-    cv::Mat frame;
-
+    
     int task_job = 0;
 
     while (1)
@@ -108,22 +110,21 @@ ptask CapturingImageTask()
                   << " is running on core " << sched_getcpu() << " at time : "
                   << ptask_gettime(MILLI) << std::endl;
 
-        ImageCapture(capture, frame);
+        ImageCapture();
         ptask_wait_for_period();
         task_job++;
     }
-    capture.release();
 
 }
 
-int ImageCapture(cv::VideoCapture cap, cv::Mat frame)
+int ImageCapture()
 {
     struct timespec start_time;
 	int begin = clock();
 	clock_gettime(CLOCK_REALTIME, &start_time); /* Get cpu time before the capture*/
 
 
-    cap >> frame;
+    capture.read(frame);
     cv::imshow("this is you, smile! :)", frame);
     cv::waitKey(1);
 
