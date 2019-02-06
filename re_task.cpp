@@ -17,6 +17,7 @@ extern "C"
 cv::Mat frame;
 cv::VideoCapture capture(cv::CAP_ANY); /* open the default camera */
 pthread_mutex_t frame_rw; /*  PTHREAD_MUTEX_INITIALIZER */
+pthread_cond_t synch_condition = PTHREAD_COND_INITIALIZER; /*thread condition variable*/ 
 
 int checkTaskCreation(int task_index);
 static int StartTask(int processor, void (*task_body)(void));
@@ -36,7 +37,6 @@ int main(int argc, char const *argv[])
    
     // Initiate the PTask
     ptask_init(SCHED_FIFO, PARTITIONED, NO_PROTOCOL);
-
 
     // Task creation
     int created_tasks = 0; /* total number of created tasks*/
@@ -120,6 +120,8 @@ ptask CapturingImageTask()
 
         pthread_mutex_lock(&frame_rw);
         capture.read(frame);
+        pthread_cond_signal(&synch_condition); /* After capturing the frame 
+                                                    signal the displaying func*/
         pthread_mutex_unlock(&frame_rw);
 
         ptask_wait_for_period();
@@ -138,14 +140,15 @@ ptask DisplyingImageTask()
         std::cout << "The job " << task_job << " of Task T" << ptask_get_index()
                   << " is running on core " << sched_getcpu() << " at time : "
                   << ptask_gettime(MILLI) << std::endl;
-
-        cv::namedWindow("Display window", cv::WINDOW_AUTOSIZE);
         
         pthread_mutex_lock(&frame_rw);
-        
-        cv::imshow("Display window", frame);        
-        cv::waitKey(1);
-        
+        pthread_cond_wait(&synch_condition, &frame_rw); /*wait for the capturing
+                                                         func to send a signal*/
+        if (frame.data) 
+        {
+            cv::imshow("Display window", frame);        
+            cv::waitKey(1);
+        }
         pthread_mutex_unlock(&frame_rw);
 
         ptask_wait_for_period();
