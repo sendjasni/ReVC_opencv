@@ -16,6 +16,7 @@ extern "C"
 
 cv::Mat frame;
 cv::VideoCapture capture(cv::CAP_ANY); /* open the default camera */
+pthread_mutex_t frame_rw; /*  PTHREAD_MUTEX_INITIALIZER */
 
 int checkTaskCreation(int task_index);
 static int StartTask(int processor, void (*task_body)(void));
@@ -117,8 +118,10 @@ ptask CapturingImageTask()
                   << " is running on core " << sched_getcpu() << " at time : "
                   << ptask_gettime(MILLI) << std::endl;
 
+        pthread_mutex_lock(&frame_rw);
         capture.read(frame);
-        fr = frame;
+        pthread_mutex_unlock(&frame_rw);
+
         ptask_wait_for_period();
         task_job++;
     }
@@ -137,8 +140,13 @@ ptask DisplyingImageTask()
                   << ptask_gettime(MILLI) << std::endl;
 
         cv::namedWindow("Display window", cv::WINDOW_AUTOSIZE);
-        cv::imshow("Display window", frame);
+        
+        pthread_mutex_lock(&frame_rw);
+        
+        cv::imshow("Display window", frame);        
         cv::waitKey(1);
+        
+        pthread_mutex_unlock(&frame_rw);
 
         ptask_wait_for_period();
         task_job++;
