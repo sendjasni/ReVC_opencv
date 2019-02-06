@@ -18,16 +18,16 @@ cv::Mat frame;
 cv::VideoCapture capture(cv::CAP_ANY); /* open the default camera */
 
 int checkTaskCreation(int task_index);
-int ImageCapture();
 static int StartTask(int processor, void (*task_body)(void));
 void TasksStatisticComputing(int nbr_tasks);
 ptask CapturingImageTask();
+ptask DisplyingImageTask();
 int TaskCreat();
 
 int main(int argc, char const *argv[])
 {
 
-    if (!capture.isOpened())               /* check if we succeeded   */ 
+    if (!capture.isOpened())            /* check if the camera device is open */ 
     {
         std::cout << "Error opening video camera! " << std::endl;
         exit(EXIT_FAILURE);
@@ -35,6 +35,7 @@ int main(int argc, char const *argv[])
    
     // Initiate the PTask
     ptask_init(SCHED_FIFO, PARTITIONED, NO_PROTOCOL);
+
 
     // Task creation
     int created_tasks = 0; /* total number of created tasks*/
@@ -52,6 +53,12 @@ int TaskCreat()
     
     checkTaskCreation(StartTask(allocated_processor, CapturingImageTask));
     allocated_processor++;
+
+    checkTaskCreation(StartTask(allocated_processor, DisplyingImageTask));
+    allocated_processor++;
+
+    ptask_activate(0);
+    ptask_activate_at(1, PER, MILLI);
 
     int exit_char;
     exit_char = getchar();
@@ -71,7 +78,7 @@ static int StartTask(int processor, void (*task_body)(void))
     params.period = tspec_from(PER, MILLI);
     params.priority = PRIORITY;
     params.measure_flag = 1;
-    params.act_flag = NOW;
+    params.act_flag = DEFERRED;
     params.processor = processor;
 
     return ptask_create_param(task_body, &params);
@@ -110,31 +117,35 @@ ptask CapturingImageTask()
                   << " is running on core " << sched_getcpu() << " at time : "
                   << ptask_gettime(MILLI) << std::endl;
 
-        ImageCapture();
+        capture.read(frame);
+        fr = frame;
         ptask_wait_for_period();
         task_job++;
     }
 
 }
 
-int ImageCapture()
+ptask DisplyingImageTask()
 {
-    struct timespec start_time;
-	int begin = clock();
-	clock_gettime(CLOCK_REALTIME, &start_time); /* Get cpu time before the capture*/
+     
+    int task_job = 0;
 
+    while (1)
+    {
+        std::cout << "The job " << task_job << " of Task T" << ptask_get_index()
+                  << " is running on core " << sched_getcpu() << " at time : "
+                  << ptask_gettime(MILLI) << std::endl;
 
-    capture.read(frame);
-    cv::imshow("this is you, smile! :)", frame);
-    cv::waitKey(1);
+        cv::namedWindow("Display window", cv::WINDOW_AUTOSIZE);
+        cv::imshow("Display window", frame);
+        cv::waitKey(1);
 
-    struct timespec finish_time;
-	int end = clock();
-	clock_gettime(CLOCK_REALTIME, &finish_time); /* Get cpu time after the capture*/
+        ptask_wait_for_period();
+        task_job++;
+    }
 
-    std::cout << "Execution time : " << (float)((finish_time.tv_nsec) - (start_time.tv_nsec)) << std::endl;
-    return EXIT_SUCCESS;
 }
+
 /* 
    Compute the worst case execution and average time
    for the created tasks
