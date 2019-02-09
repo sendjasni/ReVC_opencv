@@ -1,57 +1,26 @@
-#include <iostream>
-#include <cstdlib>
-#include "opencv2/opencv.hpp"
+#include "re_task.hpp"
 
-extern "C"
+cv::Mat frame_1;
+pthread_mutex_t frame_rw = PTHREAD_MUTEX_INITIALIZER;      /*  thread mutex 
+                                                            variable */
+pthread_cond_t synch_condition = PTHREAD_COND_INITIALIZER; /*thread condition 
+                                                            variable*/
+cv::VideoCapture capture(cv::CAP_ANY);                     /* open the default 
+                                                            camera */
+
+void CheckCapturingDevice()
 {
-#include <ptask.h>
-#include <tstat.h>
-#include <time.h>
-
-}
-
-#define PER 50
-#define ESC 27
-#define PRIORITY 10
-
-cv::Mat frame;
-cv::VideoCapture capture(cv::CAP_ANY); /* open the default camera */
-pthread_mutex_t frame_rw; /*  PTHREAD_MUTEX_INITIALIZER */
-pthread_cond_t synch_condition = PTHREAD_COND_INITIALIZER; /*thread condition variable*/ 
-
-int checkTaskCreation(int task_index);
-static int StartTask(int processor, void (*task_body)(void));
-void TasksStatisticComputing(int nbr_tasks);
-ptask CapturingImageTask();
-ptask DisplyingImageTask();
-int TaskCreat();
-
-int main(int argc, char const *argv[])
-{
-
-    if (!capture.isOpened())            /* check if the camera device is open */ 
+    if (!capture.isOpened()) /* check if the camera device is open */
     {
         std::cout << "Error opening video camera! " << std::endl;
         exit(EXIT_FAILURE);
     }
-   
-    // Initiate the PTask
-    ptask_init(SCHED_FIFO, PARTITIONED, NO_PROTOCOL);
-
-    // Task creation
-    int created_tasks = 0; /* total number of created tasks*/
-    created_tasks = TaskCreat();
-
-    // Compute the task's related stats
-    TasksStatisticComputing(created_tasks);
-
-    return EXIT_SUCCESS;
 }
 
 int TaskCreat()
 {
     int allocated_processor = 0;
-    
+
     checkTaskCreation(StartTask(allocated_processor, CapturingImageTask));
     allocated_processor++;
 
@@ -103,59 +72,82 @@ int checkTaskCreation(int task_index)
     }
 }
 
+/*
+    Display runing tasks information
+    */
+
+void DisplayTasksInstances(int job_id)
+{
+    std::cout << "The job " << job_id << " of Task T" << ptask_get_index()
+              << " is running on core " << sched_getcpu() << " at time : "
+              << ptask_gettime(MILLI) << std::endl;
+}
+
 /* 
     The capturing task' body
     */
 
 ptask CapturingImageTask()
 {
-    
+
     int task_job = 0;
 
     while (1)
     {
-        std::cout << "The job " << task_job << " of Task T" << ptask_get_index()
-                  << " is running on core " << sched_getcpu() << " at time : "
-                  << ptask_gettime(MILLI) << std::endl;
+        DisplayTasksInstances(task_job);
 
         pthread_mutex_lock(&frame_rw);
-        capture.read(frame);
+        capture.grab();
+        // std::swap(frame_1, frame_2);
         pthread_cond_signal(&synch_condition); /* After capturing the frame 
-                                                    signal the displaying func*/
+                                                    signal the displaying task*/
         pthread_mutex_unlock(&frame_rw);
 
         ptask_wait_for_period();
         task_job++;
     }
-
 }
+
+/* 
+    The displaying task' body
+    */
 
 ptask DisplyingImageTask()
 {
-     
+
     int task_job = 0;
 
     while (1)
     {
-        std::cout << "The job " << task_job << " of Task T" << ptask_get_index()
-                  << " is running on core " << sched_getcpu() << " at time : "
-                  << ptask_gettime(MILLI) << std::endl;
-        
+        DisplayTasksInstances(task_job);
+
         pthread_mutex_lock(&frame_rw);
         pthread_cond_wait(&synch_condition, &frame_rw); /*wait for the capturing
                                                          func to send a signal*/
-        if (frame.data) 
+        capture.retrieve(frame_1, CHANNEL);
+        if (frame_1.data)
         {
-            cv::imshow("Display window", frame);        
+            cv::imshow("Display window", frame_1);
+            // std::swap(frame_2, frame_1);
             cv::waitKey(1);
         }
         pthread_mutex_unlock(&frame_rw);
-
         ptask_wait_for_period();
         task_job++;
     }
-
 }
+
+// ptask FilterApplyingTask()
+// {
+//     int task_job = 0;
+
+//     while (1)
+//     {
+//         DisplayTasksInstances(task_job);
+//         ptask_wait_for_period();
+//         task_job++;
+//     }
+// }
 
 /* 
    Compute the worst case execution and average time

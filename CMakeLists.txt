@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.1)
-project(video_capture)
+project(videoCapture)
 include_directories(.)
 
 set(CMAKE_GXX_FLAGS "-Wall -Wextra -Wconversion  -pedantic -std=gnu11")
@@ -16,5 +16,5 @@ include_directories ("${ptask_INCLUDE_DIRS}")
 include_directories(${OpenCV_INCLUDE_DIRS})
 include_directories(${ALLEGRO_INCLUDE_DIR})
 
-add_executable(ReVC_opencv re_task.cpp)
-target_link_libraries(ReVC_opencv ${OpenCV_LIBS} ptask Threads::Threads rt m)
+add_executable(revc_opencv main.cpp re_task.cpp)
+target_link_libraries(revc_opencv ${OpenCV_LIBS} ptask Threads::Threads rt m)
