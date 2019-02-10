@@ -8,6 +8,8 @@ int main(int argc, char const *argv[])
     // Initiate the PTask
     ptask_init(SCHED_FIFO, PARTITIONED, NO_PROTOCOL);
 
+    cv::namedWindow(CAPTURED_IMAGE_WINDOW_NAME, cv::WINDOW_AUTOSIZE);
+
     // Task creation
     int created_tasks = 0; /* total number of created tasks*/
     created_tasks = TaskCreat();

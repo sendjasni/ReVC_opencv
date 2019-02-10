@@ -13,6 +13,7 @@ extern "C"
 #define ESC 27
 #define PRIORITY 10
 #define CHANNEL 0
+#define CAPTURED_IMAGE_WINDOW_NAME "Original capture"
 
 
 void CheckCapturingDevice();
@@ -22,4 +23,5 @@ void TasksStatisticComputing(int);
 void DisplayTasksInstances(int);
 ptask CapturingImageTask();
 ptask DisplyingImageTask();
+ptask FilterApplyingTask();
 int TaskCreat();

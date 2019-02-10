@@ -1,12 +1,22 @@
 #include "re_task.hpp"
 
 cv::Mat frame_1;
+// cv::Mat frame_2;
+
 pthread_mutex_t frame_rw = PTHREAD_MUTEX_INITIALIZER;      /*  thread mutex 
                                                             variable */
 pthread_cond_t synch_condition = PTHREAD_COND_INITIALIZER; /*thread condition 
                                                             variable*/
 cv::VideoCapture capture(cv::CAP_ANY);                     /* open the default 
                                                             camera */
+
+// int lowThreshold = 0;
+// const int max_lowThreshold = 100;
+// const int ratio = 3;
+// const int kernel_size = 3;
+// const char *second_window_name = "Edge Map";
+// cv::Mat gray_capture;
+// cv::Mat detected_edges;
 
 void CheckCapturingDevice()
 {
@@ -27,8 +37,12 @@ int TaskCreat()
     checkTaskCreation(StartTask(allocated_processor, DisplyingImageTask));
     allocated_processor++;
 
+    // checkTaskCreation(StartTask(allocated_processor, FilterApplyingTask));
+    // allocated_processor++;
+
     ptask_activate(0);
     ptask_activate_at(1, PER, MILLI);
+    // ptask_activate_at(2, PER * 2, MILLI);
 
     int exit_char;
     exit_char = getchar();
@@ -127,8 +141,9 @@ ptask DisplyingImageTask()
         capture.retrieve(frame_1, CHANNEL);
         if (frame_1.data)
         {
-            cv::imshow("Display window", frame_1);
+            cv::imshow(CAPTURED_IMAGE_WINDOW_NAME, frame_1);
             // std::swap(frame_2, frame_1);
+            // frame_2 = frame_1;
             cv::waitKey(1);
         }
         pthread_mutex_unlock(&frame_rw);
@@ -144,6 +159,10 @@ ptask DisplyingImageTask()
 //     while (1)
 //     {
 //         DisplayTasksInstances(task_job);
+//         cv::cvtColor(frame_2, gray_capture, cv::COLOR_BayerGB2GRAY);
+//         cv::blur(gray_capture, detected_edges, cv::Size(3, 3));
+//         cv::Canny(detected_edges, detected_edges, lowThreshold, lowThreshold * ratio, kernel_size);
+//         cv::imshow(second_window_name, detected_edges);
 //         ptask_wait_for_period();
 //         task_job++;
 //     }
