@@ -25,5 +25,5 @@ CMake is used as its build system for generating makefiles.
 git clone https://github.com/sendjasni/ReVC_opencv.git
 mkdir build && cd build
 cmake .. && make
-./ReVC_opencv
+sudo ./revc_opencv
 ```

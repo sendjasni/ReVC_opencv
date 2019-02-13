@@ -9,7 +9,7 @@ extern "C"
 #include <time.h>
 }
 
-#define PER 50
+#define PER 20
 #define ESC 27
 #define PRIORITY 10
 #define CHANNEL 0
