@@ -4,6 +4,7 @@
 - Introduction
 - Dependencies
 - Build
+- License
 
 ## Introduction
 **Real-time Video Capture** is a simple application for capturing periodicly images from a camera and applying some computer vision processing on it. The [**PTask**](https://github.com/glipari/ptask) lib were used to ensure task-related real-times properties.  
@@ -27,3 +28,5 @@ mkdir build && cd build
 cmake .. && make
 sudo ./revc_opencv
 ```
+## License
+ReVC_opencv is open source software [licensed as GNU](https://github.com/sendjasni/ReVC_opencv/blob/master/LICENSE.md).
