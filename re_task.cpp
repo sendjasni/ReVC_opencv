@@ -1,7 +1,14 @@
 #include "re_task.hpp"
 
-cv::Mat frame_1;
-// cv::Mat frame_2;
+cv::Mat frame[3];
+int frame_index_write = 0;
+int frame_index_read = 1;
+int frame_index_read_ = 2;
+
+int SwapIndex(int *fi)
+{
+    return *fi = (*fi + 1) % 3;
+}
 
 pthread_mutex_t frame_rw = PTHREAD_MUTEX_INITIALIZER;      /*  thread mutex 
                                                             variable */
@@ -12,11 +19,8 @@ cv::VideoCapture capture(cv::CAP_ANY);                     /* open the default
 
 // int lowThreshold = 0;
 // const int max_lowThreshold = 100;
-// const int ratio = 3;
-// const int kernel_size = 3;
-// const char *second_window_name = "Edge Map";
-// cv::Mat gray_capture;
-// cv::Mat detected_edges;
+cv::Mat gray_capture;
+cv::Mat detected_edges;
 
 void CheckCapturingDevice()
 {
@@ -37,12 +41,12 @@ int TaskCreat()
     checkTaskCreation(StartTask(allocated_processor, DisplyingImageTask));
     allocated_processor++;
 
-    // checkTaskCreation(StartTask(allocated_processor, FilterApplyingTask));
-    // allocated_processor++;
+    checkTaskCreation(StartTask(allocated_processor, EdgeDetectionTask));
+    allocated_processor++;
 
     ptask_activate(0);
     ptask_activate_at(1, PER, MILLI);
-    // ptask_activate_at(2, PER * 2, MILLI);
+    ptask_activate_at(2, PER, MILLI);
 
     int exit_char;
     exit_char = getchar();
@@ -110,12 +114,15 @@ ptask CapturingImageTask()
     {
         DisplayTasksInstances(task_job);
 
-        pthread_mutex_lock(&frame_rw);
+        // pthread_mutex_lock(&frame_rw);
+
         capture.grab();
-        // std::swap(frame_1, frame_2);
-        pthread_cond_signal(&synch_condition); /* After capturing the frame 
+        capture.retrieve(frame[frame_index_write], CHANNEL);
+        SwapIndex(&frame_index_write);
+
+        pthread_cond_broadcast(&synch_condition); /* After capturing the frame
                                                     signal the displaying task*/
-        pthread_mutex_unlock(&frame_rw);
+        // pthread_mutex_unlock(&frame_rw);
 
         ptask_wait_for_period();
         task_job++;
@@ -135,38 +142,60 @@ ptask DisplyingImageTask()
     {
         DisplayTasksInstances(task_job);
 
-        pthread_mutex_lock(&frame_rw);
+        // pthread_mutex_lock(&frame_rw);
         pthread_cond_wait(&synch_condition, &frame_rw); /*wait for the capturing
-                                                         func to send a signal*/
-        capture.retrieve(frame_1, CHANNEL);
-        if (frame_1.data)
+                                                          func to send a signal*/
+        if (frame[frame_index_read].data)
         {
-            cv::imshow(CAPTURED_IMAGE_WINDOW_NAME, frame_1);
-            // std::swap(frame_2, frame_1);
-            // frame_2 = frame_1;
+            cv::imshow(CAPTURED_IMAGE_WINDOW_NAME, frame[frame_index_read]);
+            SwapIndex(&frame_index_read);
+
             cv::waitKey(1);
         }
-        pthread_mutex_unlock(&frame_rw);
+        else
+        {
+            std::cout << "Frame reading error" << std::endl;
+        }
+
+        // pthread_mutex_unlock(&frame_rw);
+
         ptask_wait_for_period();
         task_job++;
     }
 }
 
-// ptask FilterApplyingTask()
-// {
-//     int task_job = 0;
+ptask EdgeDetectionTask()
+{
+    int task_job = 0;
 
-//     while (1)
-//     {
-//         DisplayTasksInstances(task_job);
-//         cv::cvtColor(frame_2, gray_capture, cv::COLOR_BayerGB2GRAY);
-//         cv::blur(gray_capture, detected_edges, cv::Size(3, 3));
-//         cv::Canny(detected_edges, detected_edges, lowThreshold, lowThreshold * ratio, kernel_size);
-//         cv::imshow(second_window_name, detected_edges);
-//         ptask_wait_for_period();
-//         task_job++;
-//     }
-// }
+    while (1)
+    {
+        DisplayTasksInstances(task_job);
+        
+        pthread_cond_wait(&synch_condition, &frame_rw); /*wait for the capturing
+                                                          func to send a signal*/
+        if (frame[frame_index_read_].data)
+        {
+            cv::cvtColor(frame[frame_index_read_], gray_capture, cv::COLOR_BGR2GRAY);
+            cv::blur(gray_capture, detected_edges, cv::Size(3, 3));
+            cv::Canny(detected_edges, detected_edges, 0, 100, 3);
+
+            cv::imshow(EDGE_IMAGE_WINDOW_NAME, detected_edges);
+            SwapIndex(&frame_index_read_);
+
+            cv::waitKey(1);
+        }
+        else
+        {
+            std::cout << "Frame reading error" << std::endl;
+        }
+
+        // pthread_mutex_unlock(&frame_rw);
+
+        ptask_wait_for_period();
+        task_job++;
+    }
+}
 
 /* 
    Compute the worst case execution and average time
