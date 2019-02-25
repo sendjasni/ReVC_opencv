@@ -5,6 +5,8 @@ int frame_index_write = 0;
 int frame_index_read = 1;
 int frame_index_read_ = 2;
 
+// bool shutdown = false;
+
 int SwapIndex(int *fi)
 {
     return *fi = (*fi + 1) % 3;
@@ -34,19 +36,27 @@ void CheckCapturingDevice()
 int TaskCreat()
 {
     int allocated_processor = 0;
+    rtmode_t my_modes;
+    int mode_res = rtmode_init(&my_modes, 2);
+    if (mode_res < 0)
+    {
+        std::cout << "Cannot create the mode manager!" << std::endl;
+    }
 
-    checkTaskCreation(StartTask(allocated_processor, CapturingImageTask));
+    checkTaskCreation(StartTask(allocated_processor, &my_modes, CapturingImageTask));
     allocated_processor++;
 
-    checkTaskCreation(StartTask(allocated_processor, DisplyingImageTask));
+    checkTaskCreation(StartTask(allocated_processor, &my_modes, DisplyingImageTask));
     allocated_processor++;
 
-    checkTaskCreation(StartTask(allocated_processor, EdgeDetectionTask));
+    checkTaskCreation(StartTask(allocated_processor, &my_modes, EdgeDetectionTask));
     allocated_processor++;
 
-    ptask_activate(0);
-    ptask_activate_at(1, PER, MILLI);
-    ptask_activate_at(2, PER, MILLI);
+    // ptask_activate(0);
+    // ptask_activate_at(1, PER, MILLI);
+    // ptask_activate_at(2, PER, MILLI);
+
+    rtmode_changemode(&my_modes, MODE_ON);
 
     int exit_char;
     exit_char = getchar();
@@ -54,17 +64,22 @@ int TaskCreat()
     {
         exit_char = getchar();
     }
-
+    rtmode_changemode(&my_modes, MODE_OFF);
+    // shutdown = true;
     return allocated_processor;
 }
 
-static int StartTask(int processor, void (*task_body)(void))
+static int StartTask(int processor, rtmode_t *modes, void (*task_body)(void))
 {
+
     tpars params;
 
     params = TASK_SPEC_DFL;
     params.period = tspec_from(PER, MILLI);
     params.priority = PRIORITY;
+    params.modes = modes;
+    params.mode_list[0] = MODE_ON;
+    params.mode_list[1] = MODE_OFF;
     params.measure_flag = 1;
     params.act_flag = DEFERRED;
     params.processor = processor;
@@ -107,6 +122,7 @@ void DisplayTasksInstances(int job_id)
 
 ptask CapturingImageTask()
 {
+    ptask_wait_for_activation();
 
     int task_job = 0;
 
@@ -114,7 +130,7 @@ ptask CapturingImageTask()
     {
         DisplayTasksInstances(task_job);
 
-        // pthread_mutex_lock(&frame_rw);
+        pthread_mutex_lock(&frame_rw);
 
         capture.grab();
         capture.retrieve(frame[frame_index_write], CHANNEL);
@@ -122,7 +138,7 @@ ptask CapturingImageTask()
 
         pthread_cond_broadcast(&synch_condition); /* After capturing the frame
                                                     signal the displaying task*/
-        // pthread_mutex_unlock(&frame_rw);
+        pthread_mutex_unlock(&frame_rw);
 
         ptask_wait_for_period();
         task_job++;
@@ -135,6 +151,7 @@ ptask CapturingImageTask()
 
 ptask DisplyingImageTask()
 {
+    ptask_wait_for_activation();
 
     int task_job = 0;
 
@@ -142,7 +159,7 @@ ptask DisplyingImageTask()
     {
         DisplayTasksInstances(task_job);
 
-        // pthread_mutex_lock(&frame_rw);
+        pthread_mutex_lock(&frame_rw);
         pthread_cond_wait(&synch_condition, &frame_rw); /*wait for the capturing
                                                           func to send a signal*/
         if (frame[frame_index_read].data)
@@ -157,7 +174,7 @@ ptask DisplyingImageTask()
             std::cout << "Frame reading error" << std::endl;
         }
 
-        // pthread_mutex_unlock(&frame_rw);
+        pthread_mutex_unlock(&frame_rw);
 
         ptask_wait_for_period();
         task_job++;
@@ -166,12 +183,15 @@ ptask DisplyingImageTask()
 
 ptask EdgeDetectionTask()
 {
+    ptask_wait_for_activation();
+
     int task_job = 0;
 
     while (1)
     {
         DisplayTasksInstances(task_job);
-        
+
+        pthread_mutex_lock(&frame_rw);
         pthread_cond_wait(&synch_condition, &frame_rw); /*wait for the capturing
                                                           func to send a signal*/
         if (frame[frame_index_read_].data)
@@ -190,7 +210,7 @@ ptask EdgeDetectionTask()
             std::cout << "Frame reading error" << std::endl;
         }
 
-        // pthread_mutex_unlock(&frame_rw);
+        pthread_mutex_unlock(&frame_rw);
 
         ptask_wait_for_period();
         task_job++;

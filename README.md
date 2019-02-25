@@ -14,17 +14,18 @@
 ## Dependencies
 
 - cmake >= 3.5
-  	- All OSes : [click here for installation instructions](https://cmake.org/install/)
-- make >= 4.1
-  	- Linux : make is installed by default on most Linux distributions
-- PTask 
-  	- Periodic Real-Time Task interface facility to pthreads, [click here for installation instructions](https://github.com/glipari/ptask#compiling)
-- OpenCv 
-  	- Linux :  [click here for installation instructions](https://docs.opencv.org/3.4/d7/d9f/tutorial_linux_install.html)
+  - All OSes : [click here for installation instructions](https://cmake.org/install/)
+- make >= 3.1
+  - Linux : make is installed by default on most Linux distributions
+- PTask
+  - Periodic Real-Time Task interface facility to pthreads, [click here for installation instructions](https://github.com/glipari/ptask#compiling)
+- OpenCv
+  - Linux :  [click here for installation instructions](https://docs.opencv.org/3.4/d7/d9f/tutorial_linux_install.html)
 
 ## Basic Build Instructions
 
 CMake is used as its build system for generating makefiles.
+
 ```shell
 git clone https://github.com/sendjasni/ReVC_opencv.git
 mkdir build && cd build

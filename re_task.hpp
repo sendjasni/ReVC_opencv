@@ -19,9 +19,12 @@ extern "C"
 #define CAPTURED_IMAGE_WINDOW_NAME "Original capture"
 #define EDGE_IMAGE_WINDOW_NAME "Edge image"
 
+#define MODE_OFF 0
+#define MODE_ON 1
+
 void CheckCapturingDevice();
 int checkTaskCreation(int);
-static int StartTask(int, void (*task_body)(void));
+static int StartTask(int, rtmode_t*, void (*task_body)(void));
 void TasksStatisticComputing(int);
 void DisplayTasksInstances(int);
 ptask CapturingImageTask();
